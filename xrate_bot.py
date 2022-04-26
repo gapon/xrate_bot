@@ -5,12 +5,9 @@ import os
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     Updater,
-    Filters,
     CommandHandler,
     CallbackQueryHandler,
     CallbackContext,
-    ConversationHandler,
-    MessageHandler,
 )
 from get_rates import ticker_price_on_date
 
