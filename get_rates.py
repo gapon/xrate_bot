@@ -30,7 +30,7 @@ def get_usd_rate():
         usd_rate = ticker_price_on_date(USD_TICKER, current_time)
         return usd_rate
     except IndexError:
-        print('Index Error')
+        print('No Candles Data')
 
     
 
