@@ -47,7 +47,7 @@ def set(update: Update, context: CallbackContext) -> None:
     bottom_price = context.args[0] 
     upper_price = context.args[1]
     job_context = {'chat_id': chat_id, 'bottom_price': bottom_price, 'upper_price': upper_price}
-    context.job_queue.run_repeating(alarm, 5, context=job_context, name=str(chat_id))
+    context.job_queue.run_repeating(alarm, 60, context=job_context, name=str(chat_id))
     text = f'Job for bottom_price: {bottom_price} and upper_price: {upper_price} is set'
     update.message.reply_text(text)
 
