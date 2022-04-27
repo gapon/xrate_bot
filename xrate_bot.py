@@ -9,12 +9,11 @@ from telegram.ext import (
     CallbackQueryHandler,
     CallbackContext,
 )
-from get_rates import ticker_price_on_date
+from get_rates import get_usd_rate, get_btc_rate
 
 
 BOT_ENV = os.getenv('BOT_ENV')
 TOKEN = os.getenv('TG_XRATE_TOKEN')
-USD_TICKER = 'USD000UTSTOM'
 
 if BOT_ENV == 'prod':
     APP_NAME = 'https://xrate-bot.herokuapp.com/'
@@ -24,19 +23,38 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 def start(update: Update, context: CallbackContext):
-    keyboard = [[InlineKeyboardButton('USD', callback_data='USD')]]
+    keyboard = [[InlineKeyboardButton('USD', callback_data='USD'), InlineKeyboardButton('BTC', callback_data='BTC')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text('Test', reply_markup=reply_markup )
+    update.message.reply_text('Choose a currency', reply_markup=reply_markup )
 
 def get_rates(update: Update, context: CallbackContext):
-    current_time = datetime.now(timezone('UTC'))
-    usd_rub = str(ticker_price_on_date(USD_TICKER, current_time))
     query = update.callback_query
-    keyboard = [[InlineKeyboardButton('USD', callback_data='USD')]]
+    keyboard = [[InlineKeyboardButton('USD', callback_data='USD'), InlineKeyboardButton('BTC', callback_data='BTC')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
+
+    if query.data == 'USD':
+        rate = get_usd_rate()
+    elif query.data == 'BTC':
+        rate = get_btc_rate()
+
     query.answer()
-    query.delete_message()
-    query.message.reply_text(usd_rub, reply_markup=reply_markup)
+
+    query.edit_message_text(f'{query.data}: {rate}')
+    query.message.reply_text('Choose a currency', reply_markup=reply_markup)
+
+def set(update: Update, context: CallbackContext) -> None:
+    chat_id = update.message.chat_id
+    # upper_price = float(context.args[0])
+    # context.user_data['upper_price'] = upper_price
+    context.job_queue.run_repeating(alarm, 60, context=chat_id)
+
+def alarm(context: CallbackContext):
+    job = context.job
+    rate = float(get_usd_rate())
+    if rate >= 73.25:
+        context.bot.send_message(job.context, text=rate)
+    elif: rate <= 72.5:
+        context.bot.send_message(job.context, text=rate)
 
 
 def main() -> None:
@@ -44,7 +62,8 @@ def main() -> None:
     updater = Updater(TOKEN)
     dispatcher = updater.dispatcher
 
-    dispatcher.add_handler(CommandHandler("start", start))
+    dispatcher.add_handler(CommandHandler('start', start))
+    dispatcher.add_handler(CommandHandler('set', set))
     dispatcher.add_handler(CallbackQueryHandler(get_rates))
 
     if BOT_ENV == 'prod':

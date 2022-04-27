@@ -4,8 +4,12 @@ from tinvest import schemas
 from datetime import datetime, date, timedelta
 from pytz import timezone
 import os
+import requests
+
 
 TOKEN = os.getenv('TI_SANDBOX_TOKEN')
+BINANCE_API = 'https://api.coindesk.com/v1/bpi/currentprice.json'
+USD_TICKER = 'USD000UTSTOM'
 
 client = tinvest.SyncClient(TOKEN, use_sandbox=True)
 
@@ -19,8 +23,15 @@ def ticker_price_on_date(ticker : str, dt : datetime):
     figi = get_figi_by_ticker(ticker)
     r = client.get_market_candles(figi=figi, from_=start_dttm, to=end_dttm, interval=schemas.CandleResolution.min1)
     return float(r.payload.candles[-1].c)
-    #return r.payload.candles
 
-#current_time = datetime.now(timezone('UTC'))
-#rint(ticker_price_on_date(USD_TICKER, current_time))
+def get_usd_rate():
+    current_time = datetime.now(timezone('UTC'))
+    return ticker_price_on_date(USD_TICKER, current_time)
+
+def get_btc_rate():
+    response = requests.get('https://api.coindesk.com/v1/bpi/currentprice.json')
+    data = response.json()
+    return data['bpi']['USD']['rate']
+
+
 
