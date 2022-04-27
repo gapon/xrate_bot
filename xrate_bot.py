@@ -44,17 +44,40 @@ def get_rates(update: Update, context: CallbackContext):
 
 def set(update: Update, context: CallbackContext) -> None:
     chat_id = update.message.chat_id
-    # upper_price = float(context.args[0])
-    # context.user_data['upper_price'] = upper_price
-    context.job_queue.run_repeating(alarm, 60, context=chat_id)
+    bottom_price = context.args[0] 
+    upper_price = context.args[1]
+    job_context = {'chat_id': chat_id, 'bottom_price': bottom_price, 'upper_price': upper_price}
+    context.job_queue.run_repeating(alarm, 5, context=job_context, name=str(chat_id))
+    text = f'Job for bottom_price: {bottom_price} and upper_price: {upper_price} is set'
+    update.message.reply_text(text)
 
 def alarm(context: CallbackContext):
     job = context.job
-    rate = float(get_usd_rate())
-    if rate >= 73.25:
-        context.bot.send_message(job.context, text=rate)
-    elif rate <= 72.5:
-        context.bot.send_message(job.context, text=rate)
+    bottom_price = float(job.context['bottom_price'])
+    upper_price = float(job.context['upper_price'])
+    rate = get_usd_rate()
+    if rate:
+        if rate >= upper_price:
+            text = f'🔺 Reached upper price of {upper_price}. Current price is {rate}'
+            context.bot.send_message(job.context['chat_id'],text=text)
+        elif rate <= bottom_price:
+            text = f'🔻 Reached bottom price of {bottom_price}. Current price is {rate}'
+            context.bot.send_message(job.context['chat_id'], text=text)
+
+def remove_job_if_exists(name: str, context: CallbackContext) -> bool:
+    current_jobs = context.job_queue.get_jobs_by_name(name)
+    if not current_jobs:
+        return False
+    for job in current_jobs:
+        job.schedule_removal()
+    return True
+
+def unset(update: Update, context: CallbackContext) -> None:
+    chat_id = update.message.chat_id
+    job_removed = remove_job_if_exists(str(chat_id), context)
+    text = 'Job successfully cancelled!' if job_removed else 'You have no active jobs.'
+    update.message.reply_text(text)
+
 
 
 def main() -> None:
@@ -64,6 +87,7 @@ def main() -> None:
 
     dispatcher.add_handler(CommandHandler('start', start))
     dispatcher.add_handler(CommandHandler('set', set))
+    dispatcher.add_handler(CommandHandler('unset', unset))
     dispatcher.add_handler(CallbackQueryHandler(get_rates))
 
     if BOT_ENV == 'prod':

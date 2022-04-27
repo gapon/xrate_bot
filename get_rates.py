@@ -26,12 +26,16 @@ def ticker_price_on_date(ticker : str, dt : datetime):
 
 def get_usd_rate():
     current_time = datetime.now(timezone('UTC'))
-    return ticker_price_on_date(USD_TICKER, current_time)
+    try:
+        usd_rate = ticker_price_on_date(USD_TICKER, current_time)
+        return usd_rate
+    except IndexError:
+        print('Index Error')
+
+    
 
 def get_btc_rate():
     response = requests.get('https://api.coindesk.com/v1/bpi/currentprice.json')
     data = response.json()
     return data['bpi']['USD']['rate']
-
-
 
