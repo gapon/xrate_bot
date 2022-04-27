@@ -53,7 +53,7 @@ def alarm(context: CallbackContext):
     rate = float(get_usd_rate())
     if rate >= 73.25:
         context.bot.send_message(job.context, text=rate)
-    elif: rate <= 72.5:
+    elif rate <= 72.5:
         context.bot.send_message(job.context, text=rate)
 
 
