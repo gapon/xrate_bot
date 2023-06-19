@@ -16,7 +16,7 @@ BOT_ENV = os.getenv('BOT_ENV')
 TOKEN = os.getenv('TG_XRATE_TOKEN')
 
 if BOT_ENV == 'prod':
-    APP_NAME = 'https://xrate-bot.herokuapp.com/'
+    APP_NAME = 'http://130.61.191.100/'
     PORT = int(os.environ.get('PORT', '8443'))
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
