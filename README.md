@@ -18,6 +18,7 @@ pip install -r requirements.txt
 ```bash
 export BOT_ENV=prod
 export TG_XRATE_TOKEN=
+export TI_SANDBOX_TOKEN=
 ```
 
 Обновить переменные окружения:
@@ -25,26 +26,15 @@ export TG_XRATE_TOKEN=
 source ~/.profile
 ```
 
-3. Создаем Systemd Service файл xrate_bot.service
 
-4. Создать symlinc для xrate_bot.service:
+## Получить SSL сертификат для домена через Let's Encrypt
+
+Установить
 ```bash
-sudo ln -s /home/ubuntu/xrate_bot/xrate_bot.service /lib/systemd/system/xrate_bot.service
+sudo apt install python3-certbot-nginx
 ```
 
-5. Enable and Start Service
-
-Reload the Systemd daemon to pick up the new service file:
+Запустить
 ```bash
-sudo systemctl daemon-reload
-```
-
-Enable the service to run at startup
-```bash
-sudo systemctl enable xrate_bot.service
-```
-
-Manually start the service
-```bash
-sudo systemctl start xrate_bot.service
+sudo certbot --nginx -d your_domain -d www.your_domain
 ```
