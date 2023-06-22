@@ -9,7 +9,7 @@ from telegram.ext import (
     CallbackQueryHandler,
     CallbackContext,
 )
-from get_rates import get_usd_rate, get_btc_rate
+from get_rates import get_btc_rate, get_figi_price, figi_cny, figi_usd
 
 
 BOT_ENV = os.getenv('BOT_ENV')
@@ -23,17 +23,19 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 def start(update: Update, context: CallbackContext):
-    keyboard = [[InlineKeyboardButton('USD', callback_data='USD'), InlineKeyboardButton('BTC', callback_data='BTC')]]
+    keyboard = [[InlineKeyboardButton('CNY', callback_data='CNY'), InlineKeyboardButton('USD', callback_data='USD'), InlineKeyboardButton('BTC', callback_data='BTC')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text('Choose a currency', reply_markup=reply_markup )
 
 def get_rates(update: Update, context: CallbackContext):
     query = update.callback_query
-    keyboard = [[InlineKeyboardButton('USD', callback_data='USD'), InlineKeyboardButton('BTC', callback_data='BTC')]]
+    keyboard = [[InlineKeyboardButton('CNY', callback_data='CNY'), InlineKeyboardButton('USD', callback_data='USD'), InlineKeyboardButton('BTC', callback_data='BTC')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     if query.data == 'USD':
-        rate = get_usd_rate()
+        rate = get_figi_price(figi_usd)
+    elif query.data == 'CNY':
+        rate = get_figi_price(figi_cny)
     elif query.data == 'BTC':
         rate = get_btc_rate()
 

@@ -1,41 +1,35 @@
-from xml.sax.handler import DTDHandler
-import tinvest
-from tinvest import schemas
 from datetime import datetime, date, timedelta
 from pytz import timezone
 import os
 import requests
+from tinkoff.invest.sandbox.client import SandboxClient
+from tinkoff.invest import CandleInterval
+from tinkoff.invest.utils import now, quotation_to_decimal
 
 
 TOKEN = os.getenv('TI_SANDBOX_TOKEN')
 BINANCE_API = 'https://api.coindesk.com/v1/bpi/currentprice.json'
 USD_TICKER = 'USD000UTSTOM'
+CNY_TICKER = 'CNY000UTSTOM'
+figi_cny = 'BBG0013HRTL0'
+figi_usd = 'BBG0013HGFT4'
 
-client = tinvest.SyncClient(TOKEN, use_sandbox=True)
-
-def get_figi_by_ticker(ticker : str):
-    r = client.get_market_search_by_ticker(ticker)
-    return r.payload.instruments[0].figi
-
-def ticker_price_on_date(ticker : str, dt : datetime):
-    start_dttm = dt - timedelta(minutes = 5)
-    end_dttm = dt
-    figi = get_figi_by_ticker(ticker)
-    r = client.get_market_candles(figi=figi, from_=start_dttm, to=end_dttm, interval=schemas.CandleResolution.min1)
-    return float(r.payload.candles[-1].c)
-
-def get_usd_rate():
-    current_time = datetime.now(timezone('UTC'))
+def get_figi_price(figi: str) -> float:
+    with SandboxClient(TOKEN) as client:
+        candles = list(client.get_all_candles(
+            figi=figi,
+            from_=now() - timedelta(minutes=1),
+            interval=CandleInterval.CANDLE_INTERVAL_1_MIN,
+        ))
     try:
-        usd_rate = ticker_price_on_date(USD_TICKER, current_time)
-        return usd_rate
+        return quotation_to_decimal(candles[-1].close)
     except IndexError:
-        print('No Candles Data')
-
-    
+        return 'No Candle'
 
 def get_btc_rate():
     response = requests.get('https://api.coindesk.com/v1/bpi/currentprice.json')
     data = response.json()
     return data['bpi']['USD']['rate']
 
+
+print(get_figi_price(figi_cny))
