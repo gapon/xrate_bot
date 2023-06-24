@@ -13,6 +13,7 @@ USD_TICKER = 'USD000UTSTOM'
 CNY_TICKER = 'CNY000UTSTOM'
 figi_cny = 'BBG0013HRTL0'
 figi_usd = 'BBG0013HGFT4'
+figi_tmos = 'BBG333333333'
 
 def get_figi_price(figi: str) -> float:
     with SandboxClient(TOKEN) as client:
@@ -30,6 +31,3 @@ def get_btc_rate():
     response = requests.get('https://api.coindesk.com/v1/bpi/currentprice.json')
     data = response.json()
     return data['bpi']['USD']['rate']
-
-
-print(get_figi_price(figi_cny))

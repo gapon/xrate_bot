@@ -1,9 +1,7 @@
-# Telegram Bot for tracking of USD and BTC exchange rates
-
 ## Usage:
-/set {bottom price} {upper price} – set alarm for USD reaching bottom or upper price
+/set {figi name} {bottom price} {upper price} – set alarm for USD, CNY or TMOS reaching bottom or upper price
 
-/unset – unset alarm
+/unset – unset all alarm
 
 
 Хорошие примеры: https://pythonprogramming.org/making-a-telegram-bot-using-python/
