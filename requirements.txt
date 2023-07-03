@@ -3,7 +3,7 @@ aiosignal==1.2.0
 APScheduler==3.6.3
 async-timeout==4.0.2
 attrs==21.4.0
-cachetool
+cachetool==4.2.2
 certifi==2021.10.8
 charset-normalizer==2.0.12
 contourpy==1.1.0
