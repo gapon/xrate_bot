@@ -9,7 +9,11 @@ from telegram.ext import (
     CallbackQueryHandler,
     CallbackContext,
 )
-from get_rates import get_figi_price, get_all_figi_prices, figi_dict
+from get_rates import get_figi_price, get_all_figi_prices, figi_dict, get_candles_for_period, create_candles_df, plot_candles
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Qt5Agg')
+import seaborn as sns
 
 
 BOT_ENV = os.getenv('BOT_ENV')
@@ -44,7 +48,7 @@ def get_rates(update: Update, context: CallbackContext):
     if query.data == 'ALL':
         rates = get_all_figi_prices()
     else:
-        rates = f'{query.data}: {get_figi_price(figi_dict[query.data]):.3f}'
+        rates = f'{query.data}: {get_figi_price(figi_dict[query.data])}'
         
 
     query.answer()
@@ -91,6 +95,28 @@ def unset(update: Update, context: CallbackContext) -> None:
     text = 'Job successfully cancelled!' if job_removed else 'You have no active jobs.'
     update.message.reply_text(text)
 
+def graph(update: Update, context: CallbackContext)->None:
+    """
+    Outputs a ticker close price chart for the period
+
+    /graph {ticker} {period}
+    arg[0] - figi_name
+    arg[1] - period 30/90/360 days
+    """
+
+    figi_name = context.args[0]
+    figi = figi_dict[figi_name]
+    period = int(context.args[1])
+
+    canles = get_candles_for_period(figi, period)
+    df = create_candles_df(canles)
+
+    plt.figure(figsize=(10,5))
+    ax = sns.lineplot(df, x=df['date'], y=df['close'])
+    plt.savefig('output.png')
+
+    chat_id = update.message.chat_id
+    context.bot.send_photo(chat_id, open('output.png', 'rb'))
 
 
 def main() -> None:
@@ -101,6 +127,7 @@ def main() -> None:
     dispatcher.add_handler(CommandHandler('start', start))
     dispatcher.add_handler(CommandHandler('set', set))
     dispatcher.add_handler(CommandHandler('unset', unset))
+    dispatcher.add_handler(CommandHandler('graph', graph))
     dispatcher.add_handler(CallbackQueryHandler(get_rates))
 
     if BOT_ENV == 'prod':
