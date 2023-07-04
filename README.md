@@ -3,6 +3,8 @@
 
 /unset – unset all alarm
 
+/chart {ticker} {period} – draws a ticker chart for the period
+
 
 Хорошие примеры: https://pythonprogramming.org/making-a-telegram-bot-using-python/
 
@@ -67,5 +69,5 @@ sudo apt install python3-tk
 - [x] Сделать отображение котировок всех тикеров по одной кнопке/команде.
 - [ ] Добавить сравнение котировок h2h, d2d, w2w
 - [x] Добавить отрисовку графиков
-- [ ] Сделать поиск figi по ticker-у
+- [x] Сделать поиск figi по ticker-у
 - [ ] Сделать красивые графики

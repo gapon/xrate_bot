@@ -7,6 +7,7 @@ from tinkoff.invest import CandleInterval, Quotation
 from tinkoff.invest.utils import now, quotation_to_decimal
 from tinkoff.invest.exceptions import RequestError
 import pandas as pd
+from tinkoff.invest.services import InstrumentsService
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -52,15 +53,40 @@ def get_candles_for_period(figi: str, period: int):
                 from_=now() - timedelta(days=period),
                 interval=CandleInterval.CANDLE_INTERVAL_DAY,
             ))
-        return candles
-
-def create_candles_df(candles):
-    df = pd.DataFrame(candles)
-    df['close'] = df['close'].apply(lambda x: quotation_to_decimal(Quotation(x['units'], x['nano'])))   
-    df['date'] = df['time'].dt.date
-    return df
+        candles_df = pd.DataFrame(candles)
+        candles_df['close price'] = candles_df['close'].apply(lambda x:quotation_to_decimal(Quotation(x['units'], x['nano'])))
+        candles_df['date'] = candles_df['time'].dt.date
+        df_cols = ['date', 'close price']
+        return candles_df[df_cols]
 
 def plot_candles(df):
     plt.figure(figsize=(15,10))
-    ax = sns.lineplot(df, x=df['date'], y=df['close'])
+    ax = sns.lineplot(df, x=df['date'], y=df['close price'])
     plt.savefig('output.png')
+
+def get_figi_by_ticker(ticker: str) -> str:
+    with SandboxClient(TOKEN) as client:
+        instruments: InstrumentsService = client.instruments
+        tickers = []
+        for method in ['shares', 'etfs']:
+            for item in getattr(instruments, method)().instruments:
+                tickers.append(
+                    {
+                        'ticker': item.ticker,
+                        'figi': item.figi,
+                    }
+                )
+        
+        tickers_df = pd.DataFrame(tickers)
+        
+        ticker_df = tickers_df[tickers_df['ticker'] == ticker]
+
+        if ticker_df.empty:
+            return 'NA'
+        
+        return ticker_df['figi'].iloc[0]
+    
+def chart_ticker_for_period(ticker: str, period: int) -> None:
+    figi = get_figi_by_ticker(ticker)
+    candles_df = get_candles_for_period(figi, period)
+    plot_candles(candles_df)

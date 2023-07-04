@@ -9,7 +9,12 @@ from telegram.ext import (
     CallbackQueryHandler,
     CallbackContext,
 )
-from get_rates import get_figi_price, get_all_figi_prices, figi_dict, get_candles_for_period, create_candles_df, plot_candles
+from get_rates import (
+    get_figi_price, 
+    get_all_figi_prices, 
+    figi_dict, 
+    chart_ticker_for_period,
+    )
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -104,13 +109,10 @@ def chart(update: Update, context: CallbackContext)->None:
     arg[1] - period 30/90/360 days
     """
 
-    figi_name = context.args[0]
-    figi = figi_dict[figi_name]
+    ticker = context.args[0]
     period = int(context.args[1])
 
-    canles = get_candles_for_period(figi, period)
-    df = create_candles_df(canles)
-    plot_candles(df)
+    chart_ticker_for_period(ticker, period)
 
     chat_id = update.message.chat_id
     context.bot.send_photo(chat_id, open('output.png', 'rb'))
