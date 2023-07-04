@@ -61,6 +61,6 @@ def create_candles_df(candles):
     return df
 
 def plot_candles(df):
-    plt.figure(figsize=(10,5))
+    plt.figure(figsize=(15,10))
     ax = sns.lineplot(df, x=df['date'], y=df['close'])
     plt.savefig('output.png')

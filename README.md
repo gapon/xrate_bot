@@ -39,11 +39,33 @@ sudo apt install python3-certbot-nginx
 sudo certbot --nginx -d your_domain -d www.your_domain
 ```
 
+## Отрисовка графиков в Matplotlib
 
-TODO
+Чтобы отрисовывать графики на бэкэнде нужно указать, чтобы Matplotlib использовал соответствующий бэк:
+```python
+import matplotlib
+matplotlib.use('Agg')
+```
+
+Для MacOs нужно установть PyQt5
+```bash
+pip install PyQt5
+```
+
+На Ubunte нужный бэкэнд уже установлен. В случае ошибки его нужно установить:
+```bash
+sudo apt install python3-tk
+```
+
+
+
+## TODO
 - [ ] Засервить приложение через Gunicorn + systemd. [Пример](https://github.com/gwvsol/flask-telegram-bot/blob/master/gunicorn.conf).
 - [ ] Переделать отображение кнопок/диалога.
     - Сейчас первое сообщение может подменять кнопки в прошлом.
     - Диалог "Choose a currency" выглядит ненативно.
 - [x] Сделать отображение котировок всех тикеров по одной кнопке/команде.
 - [ ] Добавить сравнение котировок h2h, d2d, w2w
+- [x] Добавить отрисовку графиков
+- [ ] Сделать поиск figi по ticker-у
+- [ ] Сделать красивые графики
