@@ -11,14 +11,12 @@ from telegram.ext import (
 )
 from get_rates import (
     get_figi_price, 
-    get_all_figi_prices, 
-    figi_dict, 
+    get_all_figi_prices,  
     chart_ticker_for_period,
+    get_tickers_df,
     )
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import seaborn as sns
+
+from dbutils import create_tickers_table, get_figi_by_ticker
 
 
 BOT_ENV = os.getenv('BOT_ENV')
@@ -33,7 +31,6 @@ logger = logging.getLogger(__name__)
 
 kb = [[
     InlineKeyboardButton('CNY', callback_data='CNY'),
-    InlineKeyboardButton('TMOS', callback_data='TMOS'),
     InlineKeyboardButton('USD', callback_data='USD'),
     #InlineKeyboardButton('BTC', callback_data='BTC'),
     ],
@@ -53,7 +50,7 @@ def get_rates(update: Update, context: CallbackContext):
     if query.data == 'ALL':
         rates = get_all_figi_prices()
     else:
-        rates = f'{query.data}: {get_figi_price(figi_dict[query.data])}'
+        rates = f'{query.data}: {get_figi_price(get_figi_by_ticker(query.data))}'
         
 
     query.answer()
@@ -63,27 +60,27 @@ def get_rates(update: Update, context: CallbackContext):
 
 def set(update: Update, context: CallbackContext) -> None:
     chat_id = update.message.chat_id
-    figi_name = context.args[0]
+    ticker = context.args[0]
     bottom_price = context.args[1] 
     upper_price = context.args[2]
-    job_context = {'chat_id': chat_id, 'figi_name': figi_name, 'bottom_price': bottom_price, 'upper_price': upper_price}
+    job_context = {'chat_id': chat_id, 'ticker': ticker, 'bottom_price': bottom_price, 'upper_price': upper_price}
     context.job_queue.run_repeating(alarm, 60, context=job_context, name=str(chat_id))
-    text = f'{figi_name} job for bottom_price: {bottom_price} and upper_price: {upper_price} is set'
+    text = f'{ticker} job for bottom_price: {bottom_price} and upper_price: {upper_price} is set'
     update.message.reply_text(text)
 
 def alarm(context: CallbackContext):
     job = context.job
-    figi_name = job.context['figi_name']
-    figi = figi_dict[figi_name]
+    ticker = job.context['ticker']
+    figi = get_figi_by_ticker(ticker)
     bottom_price = float(job.context['bottom_price'])
     upper_price = float(job.context['upper_price'])
     rate = get_figi_price(figi)
     if rate:
         if rate >= upper_price:
-            text = f"🟢 {figi_name} reached upper price of {upper_price}. Current price is *{rate}*"
+            text = f"🟢 {ticker} reached upper price of {upper_price}. Current price is *{rate}*"
             context.bot.send_message(job.context['chat_id'],text=text, parse_mode= 'Markdown')
         elif rate <= bottom_price:
-            text = f"🔴 {figi_name} reached bottom price of {bottom_price}. Current price is *{rate}*"
+            text = f"🔴 {ticker} reached bottom price of {bottom_price}. Current price is *{rate}*"
             context.bot.send_message(job.context['chat_id'], text=text, parse_mode= 'Markdown')
 
 def remove_job_if_exists(name: str, context: CallbackContext) -> bool:
@@ -119,6 +116,9 @@ def chart(update: Update, context: CallbackContext)->None:
 
 
 def main() -> None:
+    # Creating db with ticker-figi
+    tickers_df = get_tickers_df()
+    create_tickers_table(tickers_df)
 
     updater = Updater(TOKEN)
     dispatcher = updater.dispatcher

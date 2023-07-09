@@ -8,18 +8,16 @@ from tinkoff.invest.utils import now, quotation_to_decimal
 from tinkoff.invest.exceptions import RequestError
 import pandas as pd
 from tinkoff.invest.services import InstrumentsService
+from dbutils import get_figi_by_ticker
 
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-
-
 TOKEN = os.getenv('TI_SANDBOX_TOKEN')
 BINANCE_API = 'https://api.coindesk.com/v1/bpi/currentprice.json'
-figi_cny = 'BBG0013HRTL0'
-figi_usd = 'BBG0013HGFT4'
-figi_tmos = 'BBG333333333'
-figi_dict = {'CNY':'BBG0013HRTL0', 'TMOS':'BBG333333333', 'USD':'BBG0013HGFT4'}
+currency_dict = {'CNY':'BBG0013HRTL0', 'USD':'BBG0013HGFT4'}
 
 def get_figi_price(figi: str) -> float:
     try:
@@ -41,8 +39,8 @@ def get_btc_rate():
 
 def get_all_figi_prices() -> str:
     text = ""
-    for figi in figi_dict:
-        figi_price = get_figi_price(figi_dict[figi])
+    for figi in currency_dict:
+        figi_price = get_figi_price(currency_dict[figi])
         text = text + f"{figi}: {figi_price} \n"
     return text
 
@@ -63,8 +61,8 @@ def plot_candles(df):
     plt.figure(figsize=(15,10))
     ax = sns.lineplot(df, x=df['date'], y=df['close price'])
     plt.savefig('output.png')
-
-def get_figi_by_ticker(ticker: str) -> str:
+    
+def get_tickers_df():
     with SandboxClient(TOKEN) as client:
         instruments: InstrumentsService = client.instruments
         tickers = []
@@ -75,16 +73,13 @@ def get_figi_by_ticker(ticker: str) -> str:
                         'ticker': item.ticker,
                         'figi': item.figi,
                     }
-                )
-        
-        tickers_df = pd.DataFrame(tickers)
-        
-        ticker_df = tickers_df[tickers_df['ticker'] == ticker]
+                )    
+    tickers_df = pd.DataFrame(tickers)
+    currency_df = pd.DataFrame(currency_dict.items(), columns = ['ticker', 'figi'])
+    tickers_df = pd.concat([tickers_df, currency_df], ignore_index=True)
 
-        if ticker_df.empty:
-            return 'NA'
-        
-        return ticker_df['figi'].iloc[0]
+    return tickers_df
+
     
 def chart_ticker_for_period(ticker: str, period: int) -> None:
     figi = get_figi_by_ticker(ticker)
