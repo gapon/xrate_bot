@@ -57,9 +57,22 @@ def get_candles_for_period(figi: str, period: int):
         df_cols = ['date', 'close price']
         return candles_df[df_cols]
 
-def plot_candles(df):
+def plot_candles(df, ticker):
+
     plt.figure(figsize=(15,10))
-    ax = sns.lineplot(df, x=df['date'], y=df['close price'])
+    ax = sns.lineplot(df, x=df['date'], y=df['close price'], label='close price')
+    
+    if len(df) > 50:
+        df['MA50'] = df['close price'].rolling(window=50).mean()
+        sns.lineplot(df, x=df['date'], y=df['MA50'], label='MA50')
+    
+    if len(df) > 200:
+        df['MA200'] = df['close price'].rolling(window=200).mean()
+        sns.lineplot(df, x=df['date'], y=df['MA200'], label='MA200')
+
+    plt.grid()
+    plt.title(ticker.upper(), fontsize = 25)
+    plt.legend()
     plt.savefig('output.png')
     
 def get_tickers_df():
@@ -84,4 +97,4 @@ def get_tickers_df():
 def chart_ticker_for_period(ticker: str, period: int) -> None:
     figi = get_figi_by_ticker(ticker)
     candles_df = get_candles_for_period(figi, period)
-    plot_candles(candles_df)
+    plot_candles(candles_df, ticker)

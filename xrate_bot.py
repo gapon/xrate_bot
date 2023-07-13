@@ -110,7 +110,7 @@ def chart(update: Update, context: CallbackContext)->None:
     period = int(context.args[1])
 
     chart_ticker_for_period(ticker, period)
-
+    
     chat_id = update.message.chat_id
     context.bot.send_photo(chat_id, open('output.png', 'rb'))
 
