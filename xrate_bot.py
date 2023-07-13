@@ -18,6 +18,8 @@ from get_rates import (
 
 from dbutils import create_tickers_table, get_figi_by_ticker
 
+allowed_users = [1183558,]
+
 
 BOT_ENV = os.getenv('BOT_ENV')
 TOKEN = os.getenv('TG_XRATE_TOKEN')
@@ -37,6 +39,12 @@ kb = [[
     [InlineKeyboardButton('Get All', callback_data='ALL'),]]
 
 def start(update: Update, context: CallbackContext):
+    # Checking whether the user is authorized
+    user_id = update.message.from_user.id
+    if user_id not in allowed_users:
+        logger.info('Access Denied')
+        return
+    
     keyboard = kb
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text('Choose a currency', reply_markup=reply_markup )
@@ -46,19 +54,23 @@ def get_rates(update: Update, context: CallbackContext):
     keyboard = kb
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-
     if query.data == 'ALL':
         rates = get_all_figi_prices()
     else:
         rates = f'{query.data}: {get_figi_price(get_figi_by_ticker(query.data))}'
         
-
     query.answer()
 
     query.edit_message_text(rates)
     query.message.reply_text('Choose a currency', reply_markup=reply_markup)
 
 def set(update: Update, context: CallbackContext) -> None:
+    # Checking whether the user is authorized
+    user_id = update.message.from_user.id
+    if user_id not in allowed_users:
+        logger.info('Access Denied')
+        return
+
     chat_id = update.message.chat_id
     ticker = context.args[0]
     bottom_price = context.args[1] 
@@ -92,6 +104,12 @@ def remove_job_if_exists(name: str, context: CallbackContext) -> bool:
     return True
 
 def unset(update: Update, context: CallbackContext) -> None:
+    # Checking whether the user is authorized
+    user_id = update.message.from_user.id
+    if user_id not in allowed_users:
+        logger.info('Access Denied')
+        return
+
     chat_id = update.message.chat_id
     job_removed = remove_job_if_exists(str(chat_id), context)
     text = 'Job successfully cancelled!' if job_removed else 'You have no active jobs.'
@@ -105,12 +123,17 @@ def chart(update: Update, context: CallbackContext)->None:
     arg[0] - figi_name
     arg[1] - period 30/90/360 days
     """
+    # Checking whether the user is authorized
+    user_id = update.message.from_user.id
+    if user_id not in allowed_users:
+        logger.info('Access Denied')
+        return
 
     ticker = context.args[0]
     period = int(context.args[1])
 
     chart_ticker_for_period(ticker, period)
-    
+
     chat_id = update.message.chat_id
     context.bot.send_photo(chat_id, open('output.png', 'rb'))
 

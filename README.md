@@ -75,3 +75,16 @@ sudo apt install python3-tk
 - [ ] Сделать функцию вывода цены по тикеру
 - [ ] Добавить меню
 - [ ] Падумать, как отслеживать интересные компании
+- [ ] Реализовать авторизацию
+
+```python
+
+allowed_users = ['user1_id', 'user2_id', 'user3_id']
+
+def process_message(update):
+    user_id = update.message.from_user.id
+    if user_id not in allowed_users:
+        return  # Игнорировать запросы от неразрешенных пользователей
+    # Обработка сообщения от разрешенных пользователей
+    
+```
