@@ -20,6 +20,18 @@ from dbutils import create_tickers_table, get_figi_by_ticker
 
 allowed_users = [1183558,]
 
+def user_auth(func):
+    def wrapper(*args):
+        update = args[0]
+        user_id = update.message.from_user.id
+        if user_id not in allowed_users:
+            logger.info('Access Denied')
+            return
+        else:
+            return func(*args)
+
+    return wrapper
+
 
 BOT_ENV = os.getenv('BOT_ENV')
 TOKEN = os.getenv('TG_XRATE_TOKEN')
@@ -38,17 +50,13 @@ kb = [[
     ],
     [InlineKeyboardButton('Get All', callback_data='ALL'),]]
 
-def start(update: Update, context: CallbackContext):
-    # Checking whether the user is authorized
-    user_id = update.message.from_user.id
-    if user_id not in allowed_users:
-        logger.info('Access Denied')
-        return
-    
+@user_auth
+def start(update: Update, context: CallbackContext):    
     keyboard = kb
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text('Choose a currency', reply_markup=reply_markup )
 
+@user_auth
 def get_rates(update: Update, context: CallbackContext):
     query = update.callback_query
     keyboard = kb
@@ -64,13 +72,8 @@ def get_rates(update: Update, context: CallbackContext):
     query.edit_message_text(rates)
     query.message.reply_text('Choose a currency', reply_markup=reply_markup)
 
+@user_auth
 def set(update: Update, context: CallbackContext) -> None:
-    # Checking whether the user is authorized
-    user_id = update.message.from_user.id
-    if user_id not in allowed_users:
-        logger.info('Access Denied')
-        return
-
     chat_id = update.message.chat_id
     ticker = context.args[0]
     bottom_price = context.args[1] 
@@ -103,18 +106,14 @@ def remove_job_if_exists(name: str, context: CallbackContext) -> bool:
         job.schedule_removal()
     return True
 
+@user_auth
 def unset(update: Update, context: CallbackContext) -> None:
-    # Checking whether the user is authorized
-    user_id = update.message.from_user.id
-    if user_id not in allowed_users:
-        logger.info('Access Denied')
-        return
-
     chat_id = update.message.chat_id
     job_removed = remove_job_if_exists(str(chat_id), context)
     text = 'Job successfully cancelled!' if job_removed else 'You have no active jobs.'
     update.message.reply_text(text)
 
+@user_auth
 def chart(update: Update, context: CallbackContext)->None:
     """
     Outputs a ticker close price chart for the period
@@ -123,11 +122,6 @@ def chart(update: Update, context: CallbackContext)->None:
     arg[0] - figi_name
     arg[1] - period 30/90/360 days
     """
-    # Checking whether the user is authorized
-    user_id = update.message.from_user.id
-    if user_id not in allowed_users:
-        logger.info('Access Denied')
-        return
 
     ticker = context.args[0]
     period = int(context.args[1])

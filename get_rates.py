@@ -85,6 +85,7 @@ def get_tickers_df():
                     {
                         'ticker': item.ticker,
                         'figi': item.figi,
+                        #'name': item.name,
                     }
                 )    
     tickers_df = pd.DataFrame(tickers)
