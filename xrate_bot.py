@@ -25,12 +25,19 @@ def user_auth(func):
         update = args[0]
         user_id = update.message.from_user.id
         if user_id not in allowed_users:
-            logger.info('Access Denied')
+            logger.info(f'Access Denied')
             return
         else:
             return func(*args)
 
     return wrapper
+
+def log(func): 
+    def wrapper(*args, **kwargs):
+        logging.info(f"Function {func.__name__} called")
+        return func(*args, **kwargs)
+    return wrapper
+
 
 
 BOT_ENV = os.getenv('BOT_ENV')
@@ -51,12 +58,13 @@ kb = [[
     [InlineKeyboardButton('Get All', callback_data='ALL'),]]
 
 @user_auth
+@log
 def start(update: Update, context: CallbackContext):    
     keyboard = kb
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text('Choose a currency', reply_markup=reply_markup )
 
-@user_auth
+@log
 def get_rates(update: Update, context: CallbackContext):
     query = update.callback_query
     keyboard = kb
