@@ -2,12 +2,13 @@ from datetime import datetime, date, timedelta
 from pytz import timezone
 import os
 import requests
-from tinkoff.invest.sandbox.client import SandboxClient
+from tinkoff.invest import Client
 from tinkoff.invest import CandleInterval, Quotation
 from tinkoff.invest.utils import now, quotation_to_decimal
 from tinkoff.invest.exceptions import RequestError
 import pandas as pd
 from tinkoff.invest.services import InstrumentsService
+from tinkoff.invest.constants import INVEST_GRPC_API_SANDBOX
 from dbutils import get_figi_by_ticker
 
 import matplotlib
@@ -21,13 +22,13 @@ currency_dict = {'CNY':'BBG0013HRTL0', 'USD':'BBG0013HGFT4'}
 
 def get_figi_price(figi: str) -> float:
     try:
-        with SandboxClient(TOKEN) as client:
+        with Client(TOKEN) as client:
             candles = list(client.get_all_candles(
                 figi=figi,
                 from_=now() - timedelta(minutes=1),
                 interval=CandleInterval.CANDLE_INTERVAL_1_MIN,
             ))
-        
+
         return round(quotation_to_decimal(candles[-1].close), 3)
     except:
         return 'NA'
@@ -45,7 +46,7 @@ def get_all_figi_prices() -> str:
     return text
 
 def get_candles_for_period(figi: str, period: int):
-    with SandboxClient(TOKEN) as client:
+    with Client(TOKEN, target=INVEST_GRPC_API_SANDBOX) as client:
         candles = list(client.get_all_candles(
                 figi=figi,
                 from_=now() - timedelta(days=period),
@@ -61,11 +62,11 @@ def plot_candles(df, ticker):
 
     plt.figure(figsize=(15,10))
     ax = sns.lineplot(df, x=df['date'], y=df['close price'], label='close price')
-    
+
     if len(df) > 50:
         df['MA50'] = df['close price'].rolling(window=50).mean()
         sns.lineplot(df, x=df['date'], y=df['MA50'], label='MA50')
-    
+
     if len(df) > 200:
         df['MA200'] = df['close price'].rolling(window=200).mean()
         sns.lineplot(df, x=df['date'], y=df['MA200'], label='MA200')
@@ -74,9 +75,9 @@ def plot_candles(df, ticker):
     plt.title(ticker.upper(), fontsize = 25)
     plt.legend()
     plt.savefig('output.png')
-    
+
 def get_tickers_df():
-    with SandboxClient(TOKEN) as client:
+    with Client(TOKEN, target=INVEST_GRPC_API_SANDBOX) as client:
         instruments: InstrumentsService = client.instruments
         tickers = []
         for method in ['shares', 'etfs']:
@@ -87,14 +88,14 @@ def get_tickers_df():
                         'figi': item.figi,
                         #'name': item.name,
                     }
-                )    
+                )
     tickers_df = pd.DataFrame(tickers)
     currency_df = pd.DataFrame(currency_dict.items(), columns = ['ticker', 'figi'])
     tickers_df = pd.concat([tickers_df, currency_df], ignore_index=True)
 
     return tickers_df
 
-    
+
 def chart_ticker_for_period(ticker: str, period: int) -> None:
     figi = get_figi_by_ticker(ticker)
     candles_df = get_candles_for_period(figi, period)

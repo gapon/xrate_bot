@@ -3,18 +3,28 @@ from datetime import datetime
 from pytz import timezone
 import os
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+'''
 from telegram.ext import (
     Updater,
     CommandHandler,
     CallbackQueryHandler,
     CallbackContext,
 )
+'''
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes,
+    CallbackQueryHandler,
+    CallbackContext,
+)
+
 from get_rates import (
-    get_figi_price, 
-    get_all_figi_prices,  
+    get_figi_price,
+    get_all_figi_prices,
     chart_ticker_for_period,
     get_tickers_df,
-    )
+)
 
 from dbutils import create_tickers_table, get_figi_by_ticker
 
@@ -32,7 +42,7 @@ def user_auth(func):
 
     return wrapper
 
-def log(func): 
+def log(func):
     def wrapper(*args, **kwargs):
         logging.info(f"Function {func.__name__} called")
         return func(*args, **kwargs)
@@ -59,13 +69,16 @@ kb = [[
 
 @user_auth
 @log
-def start(update: Update, context: CallbackContext):    
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = kb
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text('Choose a currency', reply_markup=reply_markup )
+    await update.message.reply_text('Choose a currency', reply_markup=reply_markup )
+
+
+
 
 @log
-def get_rates(update: Update, context: CallbackContext):
+async def get_rates(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     keyboard = kb
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -74,17 +87,16 @@ def get_rates(update: Update, context: CallbackContext):
         rates = get_all_figi_prices()
     else:
         rates = f'{query.data}: {get_figi_price(get_figi_by_ticker(query.data))}'
-        
-    query.answer()
 
-    query.edit_message_text(rates)
-    query.message.reply_text('Choose a currency', reply_markup=reply_markup)
+    await query.answer()
+    await query.edit_message_text(rates)
+    await query.message.reply_text('Choose a currency', reply_markup=reply_markup)
 
 @user_auth
 def set(update: Update, context: CallbackContext) -> None:
     chat_id = update.message.chat_id
     ticker = context.args[0]
-    bottom_price = context.args[1] 
+    bottom_price = context.args[1]
     upper_price = context.args[2]
     job_context = {'chat_id': chat_id, 'ticker': ticker, 'bottom_price': bottom_price, 'upper_price': upper_price}
     context.job_queue.run_repeating(alarm, 60, context=job_context, name=str(chat_id))
@@ -122,7 +134,7 @@ def unset(update: Update, context: CallbackContext) -> None:
     update.message.reply_text(text)
 
 @user_auth
-def chart(update: Update, context: CallbackContext)->None:
+async def chart(update: Update, context: CallbackContext)->None:
     """
     Outputs a ticker close price chart for the period
 
@@ -137,7 +149,7 @@ def chart(update: Update, context: CallbackContext)->None:
     chart_ticker_for_period(ticker, period)
 
     chat_id = update.message.chat_id
-    context.bot.send_photo(chat_id, open('output.png', 'rb'))
+    await context.bot.send_photo(chat_id, open('output.png', 'rb'))
 
 
 def main() -> None:
@@ -145,24 +157,31 @@ def main() -> None:
     tickers_df = get_tickers_df()
     create_tickers_table(tickers_df)
 
-    updater = Updater(TOKEN)
-    dispatcher = updater.dispatcher
+    # Create the Application and pass it your bot's token.
+    application = Application.builder().token(TOKEN).build()
 
-    dispatcher.add_handler(CommandHandler('start', start))
-    dispatcher.add_handler(CommandHandler('set', set))
-    dispatcher.add_handler(CommandHandler('unset', unset))
-    dispatcher.add_handler(CommandHandler('chart', chart))
-    dispatcher.add_handler(CallbackQueryHandler(get_rates))
+    # Add command handlers
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CallbackQueryHandler(get_rates))
+    application.add_handler(CommandHandler('chart', chart))
 
+    #dispatcher.add_handler(CommandHandler('set', set))
+    #dispatcher.add_handler(CommandHandler('unset', unset))
+
+
+    # Run the bot until the user presses Ctrl-C
     if BOT_ENV == 'prod':
-        updater.start_webhook(listen="0.0.0.0",
-                              port=PORT,
-                              url_path=TOKEN,
-                              webhook_url = APP_NAME + TOKEN)
+        application.run_webhook(
+            listen='0.0.0.0',
+            port=5000,
+            url_path=TOKEN,
+            #secret_token='ASecretTokenIHaveChangedByNow',
+            webhook_url='https://gapon.me/'+TOKEN,
+            #cert='cert.pem'
+        )
     else:
-        updater.start_polling(timeout=10)
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
 
-    updater.idle()
 
 
 if __name__ == '__main__':
